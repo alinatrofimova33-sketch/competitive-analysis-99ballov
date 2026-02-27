@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конкурентный анализ — 99баллов</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Onest:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #ffffff10;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --accent4: #f9a825;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Onest', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(ellipse 80% 80% at 20% 10%, #6c63ff12 0%, transparent 60%),
+                      radial-gradient(ellipse 60% 60% at 80% 90%, #ff658412 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* HEADER */
+  header {
+    padding: 60px 0 40px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+  }
+
+  h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fff 0%, #a0a0d0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* NAV SECTIONS */
+  .section {
+    padding: 60px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(20px, 3vw, 30px);
+    font-weight: 700;
+    margin-bottom: 36px;
+    line-height: 1.3;
+  }
+
+  /* COMPETITOR CARDS GRID */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--card-color, var(--accent));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .card-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .card-name a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dashed var(--muted);
+    transition: border-color 0.2s;
+  }
+
+  .card-name a:hover { border-color: var(--accent); color: var(--accent); }
+
+  .card-offer {
+    display: inline-block;
+    background: var(--card-color, var(--accent));
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .card-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .card-block {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .card-block-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .card-block p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .weak { color: var(--accent2) !important; }
+  .strong { color: var(--accent3) !important; }
+
+  /* HIGHLIGHT 99ballov card */
+  .card.hero-card {
+    background: linear-gradient(135deg, #1a1a30 0%, #12122a 100%);
+    border-color: var(--accent);
+    grid-column: 1 / -1;
+  }
+
+  /* PATTERN GRID */
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .pattern-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .pattern-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: 0.4;
+  }
+
+  .pattern-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .pattern-text strong { color: #fff; display: block; margin-bottom: 4px; }
+
+  /* DIFFERENTIATORS */
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .diff-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+  }
+
+  .diff-icon {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  .diff-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+
+  .diff-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  .diff-quote {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--accent3);
+    border-left: 2px solid var(--accent3);
+    padding-left: 12px;
+    line-height: 1.5;
+  }
+
+  /* PERSONAS */
+  .personas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+
+  .persona-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .persona-head {
+    padding: 20px 20px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .persona-avatar {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 10px;
+    background: var(--p-color, var(--accent));
+  }
+
+  .persona-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .persona-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .persona-body { padding: 16px 20px; }
+
+  .persona-goal {
+    font-size: 13px;
+    color: var(--accent3);
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+
+  .pain-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .pain-list li {
+    font-size: 12px;
+    color: var(--muted);
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.4;
+  }
+
+  .pain-list li::before {
+    content: '×';
+    position: absolute;
+    left: 0;
+    color: var(--accent2);
+    font-weight: 700;
+  }
+
+  .persona-quote {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text);
+    border-left: 2px solid var(--p-color, var(--accent));
+    padding-left: 10px;
+    line-height: 1.5;
+  }
+
+  /* OFFERS TABLE */
+  .offers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .offer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .offer-persona {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .offer-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .offer-triggers {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .trigger {
+    font-size: 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  /* INSIGHT BOX */
+  .insight-box {
+    background: linear-gradient(135deg, #6c63ff18 0%, #ff658412 100%);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin: 32px 0 0;
+    text-align: center;
+  }
+
+  .insight-box p {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: 600;
+    line-height: 1.5;
+    color: #fff;
+  }
+
+  .insight-box span { color: var(--accent3); }
+
+  /* TAG OFFERS */
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 40px 0;
+    text-align: center;
+  }
+
+  footer p { font-size: 12px; color: var(--muted); }
+
+  /* SCROLL ANIM */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate { animation: fadeUp 0.5s ease forwards; opacity: 0; }
+
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .bar-label { width: 130px; flex-shrink: 0; color: var(--muted); }
+
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent);
+    transition: width 1s ease;
+  }
+
+  .bar-val { width: 40px; text-align: right; font-weight: 600; color: var(--text); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand-badge">📊 Конкурентный анализ</div>
+    <h1>Рынок онлайн-подготовки<br>к ЕГЭ и ОГЭ</h1>
+    <p>Обзор ключевых игроков, паттернов рынка и точек дифференциации для <strong>99баллов</strong></p>
+  </header>
+
+  <!-- SECTION 1: COMPETITORS -->
+  <section class="section">
+    <p class="section-label">Раздел 01</p>
+    <h2 class="section-title">Карта конкурентов</h2>
+
+    <div class="cards-grid">
+
+      <!-- Умскул -->
+      <div class="card" style="--card-color: #ff6584;">
+        <div class="card-header">
+          <div class="card-name"><a href="https://umschool.net" target="_blank">Умскул</a></div>
+          <div class="card-offer" style="background: #ff6584;">Сдать ЕГЭ на 80+/90+</div>
+        </div>
+        <div class="card-row">
+          <div class="card-block">
+            <div class="card-block-label">✓ Сильное</div>
+            <p class="strong">Личный бренд учителей, эмоции, «движ», блогеры-преподаватели</p>
+          </div>
+          <div class="card-block">
+            <div class="card-block-label">✗ Слабое</div>
+            <p class="weak">Оффер «80–90 баллов» стал стандартом. Давление на страх провала</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Фоксфорд -->
+      <div class="card" style="--card-color: #43e97b;">
+        <div class="card-header">
+          <div class="card-name"><a href="https://foxford.ru" target="_blank">Фоксфорд</a></div>
+          <div class="card-offer" style="background: #43e97b;">Системная подготовка</div>
+        </div>
+        <div class="card-row">
+          <div class="card-block">
+            <div class="card-block-label">✓ Сильное</div>
+            <p class="strong">Доверие, экспертиза, преподаватели из вузов, «серьёзность»</p>
+          </div>
+          <div class="card-block">
+            <div class="card-block-label">✗ Слабое</div>
+            <p class="weak">Сухо, мало эмоций, ощущение «школы 2.0»</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Тетрика -->
+      <div class="card" style="--card-color: #f9a825;">
+        <div class="card-header">
+          <div class="card-name"><a href="https://tetrika.ru" target="_blank">Тетрика</a></div>
+          <div class="card-offer" style="background: #f9a825; color: #000;">Индивидуальные занятия</div>
+        </div>
+        <div class="card-row">
+          <div class="card-block">
+            <div class="card-block-label">✓ Сильное</div>
+            <p class="strong">Простота, персональный подход, понятный путь</p>
+          </div>
+          <div class="card-block">
+            <div class="card-block-label">✗ Слабое</div>
+            <p class="weak">Нет яркой идеи, больше «репетиторство», не онлайн-школа</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Сотка -->
+      <div class="card" style="--card-color: #e040fb;">
+        <div class="card-header">
+          <div class="card-name"><a href="https://sotkaege.ru" target="_blank">Сотка</a></div>
+          <div class="card-offer" style="background: #e040fb;">100 баллов — реально</div>
+        </div>
+        <div class="card-row">
+          <div class="card-block">
+            <div class="card-block-label">✓ Сильное</div>
+            <p class="strong">Молодёжный стиль, мемы, харизма, визуал, «свои»</p>
+          </div>
+          <div class="card-block">
+            <div class="card-block-label">✗ Слабое</div>
+            <p class="weak">Обещание «100» звучит нереалистично, риск недоверия</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maximum -->
+      <div class="card" style="--card-color: #26c6da;">
+        <div class="card-header">
+          <div class="card-name"><a href="https://maximumtest.ru" target="_blank">Maximum</a></div>
+          <div class="card-offer" style="background: #26c6da;">Гарантия поступления</div>
+        </div>
+        <div class="card-row">
+          <div class="card-block">
+            <div class="card-block-label">✓ Сильное</div>
+            <p class="strong">Долгая история, доверие родителей, оффлайн + онлайн</p>
+          </div>
+          <div class="card-block">
+            <div class="card-block-label">✗ Слабое</div>
+            <p class="weak">Сложная коммуникация, нет лёгкости, тяжёлый бренд</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skyeng -->
+      <div class="card" style="--card-color: #ff7043;">
+        <div class="card-header">
+          <div class="card-name"><a href="https://skyeng.ru" target="_blank">Skyeng</a></div>
+          <div class="card-offer" style="background: #ff7043;">Индивидуальные занятия</div>
+        </div>
+        <div class="card-row">
+          <div class="card-block">
+            <div class="card-block-label">✓ Сильное</div>
+            <p class="strong">Сильный бренд, удобство, технологичность</p>
+          </div>
+          <div class="card-block">
+            <div class="card-block-label">✗ Слабое</div>
+            <p class="weak">Не специализируются на ЕГЭ, расплывчатость результата</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TutorOnline -->
+      <div class="card" style="--card-color: #78909c;">
+        <div class="card-header">
+          <div class="card-name"><a href="https://tutoronline.ru" target="_blank">TutorOnline</a></div>
+          <div class="card-offer" style="background: #78909c;">Репетитор под бюджет</div>
+        </div>
+        <div class="card-row">
+          <div class="card-block">
+            <div class="card-block-label">✓ Сильное</div>
+            <p class="strong">Выбор учителей, гибкость, маркетплейс</p>
+          </div>
+          <div class="card-block">
+            <div class="card-block-label">✗ Слабое</div>
+            <p class="weak">Нет единой методологии, нет системного подхода</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 2: MARKET PATTERNS -->
+  <section class="section">
+    <p class="section-label">Раздел 02</p>
+    <h2 class="section-title">Паттерны рынка</h2>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pattern-num">1</div>
+        <div class="pattern-text">
+          <strong>Гонка баллов</strong>
+          Все обещают 80+, 90+, 100 баллов. Оффер обесценился — стал «как у всех».
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-num">2</div>
+        <div class="pattern-text">
+          <strong>Экспертность как аргумент</strong>
+          Все говорят про «опытных преподавателей» и «авторские методики».
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-num">3</div>
+        <div class="pattern-text">
+          <strong>Давление страхом</strong>
+          Почти все давят на страх провала: «провалишься — не поступишь».
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-num">4</div>
+        <div class="pattern-text">
+          <strong>Никто не продаёт путь</strong>
+          Рынок перегрет результатами. Спокойствие, система и контроль — свободная ниша.
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      <p>🔍 Рынок продаёт <span>результат</span>.<br>Почти никто не продаёт <span>путь к нему</span>.</p>
+    </div>
+  </section>
+
+  <!-- SECTION 3: DIFFERENTIATION -->
+  <section class="section">
+    <p class="section-label">Раздел 03</p>
+    <h2 class="section-title">Точки дифференциации для 99баллов</h2>
+
+    <div class="diff-grid">
+      <div class="diff-card">
+        <div class="diff-icon">📊</div>
+        <div class="diff-title">Прогнозируемый результат</div>
+        <div class="diff-desc">Каждые 2 недели — срез. Видна динамика. Понятно, где недобор. Личный дашборд, карта ошибок, прогноз баллов.</div>
+        <div class="diff-quote">«Ты не будешь гадать, готов ты или нет — у тебя будет система измерения.»</div>
+      </div>
+      <div class="diff-card">
+        <div class="diff-icon">🧩</div>
+        <div class="diff-title">Анти-хаос подготовка</div>
+        <div class="diff-desc">Не больше уроков — больше структуры. Чёткий план на год. Без лишнего, без перегруза.</div>
+        <div class="diff-quote">«Ты точно знаешь, сколько баллов получишь — потому что каждую неделю видишь прогноз.»</div>
+      </div>
+      <div class="diff-card">
+        <div class="diff-icon">🧘</div>
+        <div class="diff-title">Подготовка без выгорания</div>
+        <div class="diff-desc">Рынок строится на страхе. 99баллов — на психологической поддержке, режиме и управлении нагрузкой.</div>
+        <div class="diff-quote">«Вместо тревоги — контроль. Вместо паники — план.»</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: PERSONAS -->
+  <section class="section">
+    <p class="section-label">Раздел 04</p>
+    <h2 class="section-title">Целевые персонажи</h2>
+
+    <div class="personas-grid">
+
+      <div class="persona-card" style="--p-color: #6c63ff;">
+        <div class="persona-head">
+          <div class="persona-avatar" style="background: #6c63ff22;">🎯</div>
+          <div class="persona-name">Артём Соколов</div>
+          <div class="persona-meta">17 лет · 11 класс · Екатеринбург · Математика/ИТ</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-goal">Цель: 90+ по профильной математике, бюджет в технический вуз</div>
+          <ul class="pain-list">
+            <li>Вторая часть «разваливается»</li>
+            <li>Готовится рывками, нет системы</li>
+            <li>Боится не добрать 2–3 балла</li>
+            <li>Выгорает перед пробниками</li>
+          </ul>
+          <div class="persona-quote">«Мне нужен чёткий план, чтобы не тратить время впустую.»</div>
+        </div>
+      </div>
+
+      <div class="persona-card" style="--p-color: #ff6584;">
+        <div class="persona-head">
+          <div class="persona-avatar" style="background: #ff658422;">📝</div>
+          <div class="persona-name">Диана Каримова</div>
+          <div class="persona-meta">16 лет · 10 класс · Казань · Русский/Обществознание</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-goal">Цель: 85+ по обществознанию, поступить на юриспруденцию</div>
+          <ul class="pain-list">
+            <li>Теряется в теории</li>
+            <li>Не умеет писать развёрнутые ответы</li>
+            <li>Боится сочинения</li>
+            <li>Сравнивает себя с другими</li>
+          </ul>
+          <div class="persona-quote">«Мне важно видеть реальные кейсы — кто уже сдал на 90+.»</div>
+        </div>
+      </div>
+
+      <div class="persona-card" style="--p-color: #f9a825;">
+        <div class="persona-head">
+          <div class="persona-avatar" style="background: #f9a82522;">🎮</div>
+          <div class="persona-name">Илья Морозов</div>
+          <div class="persona-meta">15 лет · 9 класс · Пермский край · ОГЭ</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-goal">Цель: просто сдать ОГЭ, не остаться на второй год</div>
+          <ul class="pain-list">
+            <li>Низкая дисциплина, прокрастинация</li>
+            <li>Не понимает формат экзамена</li>
+            <li>Слабая база по математике</li>
+            <li>На уроке понимает, на пробнике — ноль</li>
+          </ul>
+          <div class="persona-quote">«Если бы кто-то заставлял регулярно заниматься — было бы проще.»</div>
+        </div>
+      </div>
+
+      <div class="persona-card" style="--p-color: #43e97b;">
+        <div class="persona-head">
+          <div class="persona-avatar" style="background: #43e97b22;">⚡</div>
+          <div class="persona-name">Максим Громов</div>
+          <div class="persona-meta">17 лет · 11 класс · Санкт-Петербург · Поздний старт</div>
+        </div>
+        <div class="persona-body">
+          <div class="persona-goal">Цель: поднять с 60 до 80+ за 6–8 месяцев</div>
+          <ul class="pain-list">
+            <li>Начал готовиться поздно</li>
+            <li>Пробелы по базовым темам</li>
+            <li>Паника из-за дедлайнов</li>
+            <li>Пропускает занятия из-за подработки</li>
+          </ul>
+          <div class="persona-quote">«Я понимаю, что уже поздно, но хочется всё ещё успеть.»</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 5: OFFERS -->
+  <section class="section">
+    <p class="section-label">Раздел 05</p>
+    <h2 class="section-title">Офферы под каждый персонаж</h2>
+
+    <div class="offers-grid">
+      <div class="offer-card">
+        <div class="offer-persona">Персонаж 1 — Артём</div>
+        <div class="offer-name">🎯 Амбициозный математик</div>
+        <div class="offer-triggers">
+          <div class="trigger">📈 «+27 баллов к пробнику за 8 месяцев»</div>
+          <div class="trigger">📐 Разберём каждое задание №13–19 профиля</div>
+          <div class="trigger">🗂 Пошаговый план до экзамена + чек-листы</div>
+          <div class="trigger">🏆 Скрины реальных результатов ИТ-поступников</div>
+        </div>
+      </div>
+      <div class="offer-card">
+        <div class="offer-persona">Персонаж 2 — Диана</div>
+        <div class="offer-name">📚 Амбициозный гуманитарий</div>
+        <div class="offer-triggers">
+          <div class="trigger">✍️ «Как писать эссе на максимум» — формулы ответа</div>
+          <div class="trigger">📋 Готовые структуры сочинений + разбор ошибок</div>
+          <div class="trigger">🤝 Куратор проверяет работы + чат единомышленников</div>
+          <div class="trigger">💆 «Перестаёшь бояться сочинения»</div>
+        </div>
+      </div>
+      <div class="offer-card">
+        <div class="offer-persona">Персонаж 3 — Илья</div>
+        <div class="offer-name">🎮 Девятиклассник без мотивации</div>
+        <div class="offer-triggers">
+          <div class="trigger">🙌 «Объясняем на пальцах» — без скучных лекций</div>
+          <div class="trigger">🔔 Куратор напоминает про ДЗ + мини-проверки</div>
+          <div class="trigger">🏅 Геймификация: баллы, рейтинг, челленджи</div>
+          <div class="trigger">⚠️ Что будет, если не сдать ОГЭ?</div>
+        </div>
+      </div>
+      <div class="offer-card">
+        <div class="offer-persona">Персонаж 4 — Максим</div>
+        <div class="offer-name">⚡ Поздно спохватившийся</div>
+        <div class="offer-triggers">
+          <div class="trigger">🚀 «Ещё не поздно» — интенсив за 6 месяцев</div>
+          <div class="trigger">🔍 Диагностика слабых тем + индивидуальный маршрут</div>
+          <div class="trigger">📅 Чёткий график + еженедельный контроль</div>
+          <div class="trigger">😌 Снижение паники через структуру</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAG CLOUD OF OFFERS -->
+    <div style="margin-top: 36px;">
+      <p class="section-label" style="margin-bottom: 16px;">Готовые офферные формулировки</p>
+      <div class="tag-cloud">
+        <div class="tag">🔥 Подготовка на 80–95+ по чёткой системе</div>
+        <div class="tag">📈 +20–30 баллов к пробнику за 4–6 месяцев</div>
+        <div class="tag">🎓 Пошаговый план до 90+ без хаоса</div>
+        <div class="tag">📊 Знаешь формат — забираешь баллы</div>
+        <div class="tag">🚀 От «60 на пробнике» до «поступил на бюджет»</div>
+        <div class="tag">📉 20 баллов теряют из-за отсутствия системы</div>
+        <div class="tag">🔎 Разберём самые «сливные» задания</div>
+        <div class="tag">✍️ Сочинение на 24–25 баллов</div>
+        <div class="tag">📐 Вторая часть профиля без воды</div>
+        <div class="tag">📚 Обществознание без заучивания 200 терминов</div>
+        <div class="tag">🧩 Понятная математика вместо хаоса формул</div>
+        <div class="tag">📘 Бесплатный пробник с разбором ошибок</div>
+        <div class="tag">📄 PDF "Структура сочинения на максимум"</div>
+        <div class="tag">🎥 Открытый урок по самым сложным заданиям ЕГЭ</div>
+        <div class="tag">📝 Диагностика знаний за 30 минут</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Конкурентный анализ для <a href="https://99ballov.ru" target="_blank" style="color: var(--accent); text-decoration: none;">99баллов.ру</a> · 2025</p>
+  </footer>
+
+</div>
+
+<script>
+  // Animate on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.animationDelay = '0s';
+        entry.target.classList.add('animate');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.card, .pattern-card, .diff-card, .persona-card, .offer-card, .tag, .insight-box').forEach(el => {
+    observer.observe(el);
+  });
+</script>
+
+</body>
+</html>
